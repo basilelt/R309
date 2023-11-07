@@ -13,10 +13,14 @@ def divEntier(x:int, y:int) -> int:
 
     Raises:
         ZeroDivisionError: Si y est égal à zéro.
+        ValueError: Si y est négatif.
     """
     
     if y == 0:
         raise ZeroDivisionError("Le diviseur ne peut pas être égal à zéro.")
+    
+    if y < 0:
+        raise ValueError("Le diviseur ne peut pas être négatif.")
     
     if x < y:
         return 0

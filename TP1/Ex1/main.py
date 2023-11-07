@@ -12,6 +12,7 @@ Arguments:
     -y <diviseur> (int): Le nombre par lequel diviser.
 
 Lève :
+    ValueError: Si aucun dividende ou diviseur n'est fourni.
     ValueError: Si les arguments fournis ne sont pas des entiers.
     getopt.GetoptError: Si les arguments de ligne de commande ne sont pas fournis dans le bon format.
 """
@@ -22,15 +23,22 @@ import sys, getopt
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "x:y:", ["x=", "y="])
+        if not args or len(args) != 2:
+            raise ValueError("main.py -x <dividende> -y <diviseur>")
     except getopt.GetoptError:
         print("main.py -x <dividende> -y <diviseur>")
         sys.exit(2)
 
     try:
-        int(args[0])
-        int(args[1])
+        x = float(args[0])
+        y = float(args[1])
+        if x.is_integer() and y.is_integer():
+            x = int(x)
+            y = int(y)
+        else:
+            raise ValueError
     except ValueError:
         print("Les arguments doivent être des entiers")
     else:
-        print(divEntier(args[0], args[1]))
+        print(divEntier(x, y))
         
