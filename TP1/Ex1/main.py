@@ -14,7 +14,9 @@ Arguments:
 Lève :
     ValueError: Si aucun dividende ou diviseur n'est fourni.
     ValueError: Si les arguments fournis ne sont pas des entiers.
+    ValueError: Si les arguments fournis ne sont pas des entiers positifs.
     getopt.GetoptError: Si les arguments de ligne de commande ne sont pas fournis dans le bon format.
+    ZeroDivisionError: Si le diviseur est égal à zéro.
 """
 
 from functions.div_entier import divEntier
