@@ -26,7 +26,7 @@ if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "x:y:", ["x=", "y="])
         if not args or len(args) != 2:
-            raise ValueError()
+            raise ValueError
     except ValueError:
         print("main.py -x <dividende> -y <diviseur>")
         sys.exit(2)

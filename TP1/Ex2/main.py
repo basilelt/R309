@@ -25,8 +25,11 @@ if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "f:", ["f="])
         if not args:
-            raise ValueError("main.py -f <path_fichier>")
+            raise ValueError
         path = args[0]
+    except ValueError:
+        print("main.py -x <dividende> -y <diviseur>")
+        sys.exit(2)
     except getopt.GetoptError:
         print("main.py -f <path_fichier>")
         sys.exit(2)
