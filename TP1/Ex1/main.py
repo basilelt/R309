@@ -39,6 +39,26 @@ if __name__ == "__main__":
             raise ValueError
     except ValueError:
         print("Les arguments doivent être des entiers")
+
     else:
-        print(divEntier(x, y))
-        
+        flag = False
+        while not flag:
+            try:
+                print(divEntier(x, y))
+            except ZeroDivisionError as err:
+                print(err)
+                y = int(input("y= "))
+            except ValueError as err:
+                try:
+                    x = float(input("x= "))
+                    y = float(input("y= "))
+                    if x.is_integer() and y.is_integer():
+                        x = int(x)
+                        y = int(y)
+                    else:
+                        raise ValueError
+                except ValueError:
+                    print("Les arguments doivent être des entiers")
+            else:
+                flag = True
+            
