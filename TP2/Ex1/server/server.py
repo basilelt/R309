@@ -29,15 +29,17 @@ Exception
     Si une autre exception est levée.
 """
 
-import socket
-import threading
+import socket, threading, re
+
+flag = False
 
 def server(host:str, port:int) -> None:
+    global flag
     connections = {}
     server_socket_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket_tcp.bind((host, port))
     server_socket_tcp.listen(1)
-    while True:
+    while not flag:
         try:
             conn, address = server_socket_tcp.accept()
             connections[conn] = address
@@ -51,28 +53,44 @@ def server(host:str, port:int) -> None:
             print("Timeout")
         except KeyboardInterrupt:
             print("Serveur en cours d'extinction...")
-            for conn in connections:
-                conn.close()
-            server_socket_tcp.close()
-            break
+            if connections:
+                for conn in connections:
+                    conn.close()
+                server_socket_tcp.close()
         except Exception as err:
             print(err)
 
 def handler(connections:dict, conn:socket.socket) -> None:
-    try:
-        data = conn.recv(1024).decode()
-        if data == "bye":
-            del connections[conn]
-            conn.close()
-        elif data == "arret":
-            raise KeyboardInterrupt
-        else:
-            for client in connections:
-                if client != conn:
-                    client.send(data.encode())
-    except(ConnectionResetError):
-        print("Connexion réinitialisée")
-    except(BrokenPipeError):
-        print("Rupture de la connexion")
+    global flag
+    flag2 = False
+    while not flag2:
+        try:
+            data = conn.recv(1024).decode()
+            print(data)
+
+            pattern_bye = r'^.*: bye'
+            match_bye = re.search(pattern_bye, data)
+
+            pattern_arret = r'^.*: arret'
+            match_arret = re.search(pattern_arret, data)
+
+            if match_bye:
+                conn.send(data.encode())
+                del connections[conn]
+                flag2 = True
+            elif match_arret:
+                for conn in connections:
+                    conn.send(data.encode())
+                    del connections[conn]
+                flag2 = True
+                flag = True
+            else:
+                for client in connections:
+                    if client != conn:
+                        client.send(data.encode())
+        except(ConnectionResetError):
+            print("Connexion réinitialisée")
+        except(BrokenPipeError):
+            print("Rupture de la connexion")
 
         

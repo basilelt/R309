@@ -29,68 +29,63 @@ ConnectionResetError
     Si la connexion est réinitialisée pendant l'envoi d'un message.
 """
 
-import socket, threading, queue
-from pynput import keyboard
+import socket, threading
 
-input_queue = queue.Queue()
+flag = False
 
 def client(user:str, host:str, port:int) -> None:
-    flag = False
+    global flag
+    try:
+        client_socket_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket_tcp.connect((host, port))
+        threading.Thread(target=listen, args=(client_socket_tcp, user)).start()
+        send(client_socket_tcp, user)
+    except(socket.gaierror):
+        flag = True
+        print("Erreur lors de la résolution de l'hôte")
+    except(ConnectionRefusedError):
+        flag = True
+        print("Connexion refusée")
+    except(TimeoutError):
+        flag = True
+        print("Timeout")
+    except KeyboardInterrupt:
+        flag = True
+        print("Client en cours d'extinction...")
+        client_socket_tcp.send(user + ": " + "bye".encode())
+    except Exception as err:
+        flag = True
+        print(err)
+    finally:
+        client_socket_tcp.close()
+        
+
+def send(socket:socket.socket, user:str) -> None:
+    global flag
+    try:
+        while not flag:
+            data = input("Message: ")
+            socket.send((user + ": " + data).encode())
+    except(ConnectionResetError):
+        flag = True
+        print("Connexion réinitialisée")
+    except(BrokenPipeError):
+        flag = True
+        print("Rupture de la connexion")
+
+def listen(socket:socket.socket, user:str) -> None:
+    global flag
     while not flag:
         try:
-            client_socket_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket_tcp.connect((host, port))
-            threading.Thread(target=send, args=(client_socket_tcp, user)).start()
-            threading.Thread(target=listen, args=(client_socket_tcp,)).start()
-        except(socket.gaierror):
-            print("Erreur lors de la résolution de l'hôte")
-        except(ConnectionRefusedError):
-            print("Connexion refusée")
-        except(TimeoutError):
-            print("Timeout")
-        except KeyboardInterrupt as err:
-            print("Client en cours d'extinction...")
-            if err.args:
-                if err.args[0] == "arret":
-                    client_socket_tcp.send("arret".encode())
-            else:
-                client_socket_tcp.send("bye".encode())
-            client_socket_tcp.close()
-            break
-        except Exception as err:
-            print(err)
-
-def on_press(key):
-    try:
-        input_queue.put(key.char) # Essaie de récupérer le caractère associé à la touche
-    except AttributeError:
-        pass # Touche spéciale (flèches, ctrl, alt, etc.)
-
-
-def send(socket:socket.socket, user) -> None:
-    while True:
-        try:
-            data = ''
-            while not input_queue.empty():  # Tant que la file n'est pas vide
-                data += input_queue.get()  # Prend le prochain caractère
-            if data == "arret":
-                raise KeyboardInterrupt(data)
-            elif data == "bye":
-                raise KeyboardInterrupt(data)
-            elif data:
-                socket.send((user+data).encode())
-        except(ConnectionResetError):
-            print("Connexion réinitialisée")
-        except(BrokenPipeError):
-            print("Rupture de la connexion")
-
-def listen(socket:socket.socket) -> None:
-    while True:
-        try:
             data = socket.recv(1024).decode()
-            if data:
-                print(data)
+            if data == user + ": " + "arret":
+                flag = True
+            elif data == user + ": " + "bye":
+                flag = True
+            print(data)
         except(ConnectionResetError):
+            flag = True
             print("Connexion réinitialisée")
         except(BrokenPipeError):
+            flag = True
             print("Rupture de la connexion")
