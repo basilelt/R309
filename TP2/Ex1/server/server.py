@@ -29,44 +29,49 @@ Exception
     Si une autre exception est levée.
 """
 
-import socket, threading, re
+import socket, threading, re, time, sys
 
 flag = False
+flag2 = False
 
 def server(host:str, port:int) -> None:
-    global flag
+    global flag, flag2
     connections = {}
     server_socket_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket_tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket_tcp.bind((host, port))
     server_socket_tcp.listen(1)
-    while not flag:
-        try:
+
+    try:
+        while not flag:
             conn, address = server_socket_tcp.accept()
             connections[conn] = address
-            client_thread = threading.Thread(target=handler, args=(connections,conn))
-            client_thread.start()
-        except(socket.gaierror):
-            print("Erreur lors de la résolution de l'hôte")
-        except(ConnectionRefusedError):
-            print("Connexion refusée")
-        except(TimeoutError):
-            print("Timeout")
-        except KeyboardInterrupt:
-            print("Serveur en cours d'extinction...")
-            if connections:
-                for conn in connections:
-                    conn.close()
-                server_socket_tcp.close()
-        except Exception as err:
-            print(err)
+            threading.Thread(target=handler, args=(connections,conn,port,host)).start()
+    except(socket.gaierror):
+        print("Erreur lors de la résolution de l'hôte")
+    except(ConnectionRefusedError):
+        print("Connexion refusée")
+    except(TimeoutError):
+        print("Timeout")
+    except KeyboardInterrupt:
+        print("Serveur en cours d'extinction...")
+        flag = True
+        flag2 = True
+        if connections:
+            for conn in connections:
+                conn.close()
+    except Exception as err:
+        print(err)
+    finally:
+        time.sleep(0.5)
+        server_socket_tcp.close()
+        sys.exit()
 
-def handler(connections:dict, conn:socket.socket) -> None:
-    global flag
-    flag2 = False
+def handler(connections:dict, conn:socket.socket, port:int, host:str) -> None:
+    global flag, flag2
     while not flag2:
         try:
             data = conn.recv(1024).decode()
-            print(data)
 
             pattern_bye = r'^.*: bye'
             match_bye = re.search(pattern_bye, data)
@@ -79,12 +84,19 @@ def handler(connections:dict, conn:socket.socket) -> None:
                 del connections[conn]
                 flag2 = True
             elif match_arret:
-                for conn in connections:
+                print("Serveur en cours d'extinction...")
+                clone = connections.copy()
+                for conn in clone:
                     conn.send(data.encode())
                     del connections[conn]
                 flag2 = True
                 flag = True
-            else:
+
+                shut_socket_tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                shut_socket_tcp.connect((host, port))
+                shut_socket_tcp.send(("Server shutdown...").encode())
+                shut_socket_tcp.close()
+            elif data:
                 for client in connections:
                     if client != conn:
                         client.send(data.encode())

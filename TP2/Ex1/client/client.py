@@ -29,7 +29,7 @@ ConnectionResetError
     Si la connexion est réinitialisée pendant l'envoi d'un message.
 """
 
-import socket, threading
+import socket, threading, time, re, sys
 
 flag = False
 
@@ -50,22 +50,26 @@ def client(user:str, host:str, port:int) -> None:
         flag = True
         print("Timeout")
     except KeyboardInterrupt:
+        client_socket_tcp.send((user + ": " + "bye").encode())
         flag = True
         print("Client en cours d'extinction...")
-        client_socket_tcp.send(user + ": " + "bye".encode())
     except Exception as err:
         flag = True
         print(err)
     finally:
+        time.sleep(1)
         client_socket_tcp.close()
+        sys.exit()
         
 
 def send(socket:socket.socket, user:str) -> None:
     global flag
     try:
         while not flag:
-            data = input("Message: ")
+            data = input()
             socket.send((user + ": " + data).encode())
+            if data == "bye" or data == "arret":
+                flag = True
     except(ConnectionResetError):
         flag = True
         print("Connexion réinitialisée")
@@ -78,11 +82,18 @@ def listen(socket:socket.socket, user:str) -> None:
     while not flag:
         try:
             data = socket.recv(1024).decode()
-            if data == user + ": " + "arret":
+
+            pattern_arret = r'^.*: arret'
+            match_arret = re.search(pattern_arret, data)
+
+            if match_arret:
                 flag = True
+                print("Client en cours d'extinction...")
             elif data == user + ": " + "bye":
                 flag = True
-            print(data)
+                print("Client en cours d'extinction...")
+            else:
+                print(data)
         except(ConnectionResetError):
             flag = True
             print("Connexion réinitialisée")
