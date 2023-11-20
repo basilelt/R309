@@ -153,7 +153,7 @@ class MainWindow(QMainWindow):
                 raise ValueError
             
         except ValueError:
-            self.__error.setText(f"{self.__temp.text()}{self.__lab2} n'est pas un nombre valide")
+            self.__error.setText(f"{self.__temp.text()}{self.__lab2.text()} n'est pas un nombre valide")
 
 
     def __action_aide(self):
