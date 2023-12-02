@@ -1,0 +1,1 @@
+Pour la partie graphique lancer avec "python main.py" dans "./graphic/".
